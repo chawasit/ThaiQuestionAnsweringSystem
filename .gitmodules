@@ -1,0 +1,3 @@
+[submodule "lexto"]
+	path = lexto
+	url = https://github.com/Remixman/PythonLexTo.git
