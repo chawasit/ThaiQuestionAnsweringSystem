@@ -1,3 +1,6 @@
 [submodule "SynThai"]
 	path = SynThai
 	url = https://github.com/chawasit/SynThai.git
+[submodule "lexto"]
+	path = lexto
+	url = https://github.com/chawasit/PythonLexTo.git

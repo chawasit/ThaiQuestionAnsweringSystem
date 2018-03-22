@@ -5,13 +5,17 @@ import os
 import io
 import operator
 import pprint
+from lexto.LexTo import LexTo
 
-output_directory = 'output'
+lexto = LexTo()
+
+# output_directory = 'output/lexto'
+output_directory = 'output/synthai'
 
 document_directory = 'data/Examples'
 source_directory = os.path.join(document_directory, 'Sources')
 source_list_path = os.path.join(document_directory, 'source_list.txt')
-interesting_token_type = ['NN', 'NR', 'FWN', 'VV', 'PINT', 'DINT']
+interesting_token_type = ['NN', 'NR', 'FWN']
 
 def write_file(file_path, content):
     with io.open(os.path.join(output_directory, file_path), 'w', encoding='utf8') as file:
@@ -44,6 +48,7 @@ with io.open(source_list_path, 'r') as source_list:
             tokens_string = synthai.tokenize(text)
             tokens = tokens_string.split('|')
             tokens = filter_interest_token(tokens)
+            # tokens = lexto.tokenize(text)[0]
             for token in tokens:
                 if token not in corpus_dictionary:
                     corpus_dictionary[token] = 0
@@ -68,6 +73,7 @@ with io.open(question_path, 'r', encoding='utf-8-sig') as question_file:
         tokens_string = synthai.tokenize(question)
         tokens = tokens_string.split('|')
         tokens = filter_interest_token(tokens)
+        # tokens = lexto.tokenize(question)[0]
         for token in tokens:
             if token not in question_token_list:
                 question_token_list.append(token)
