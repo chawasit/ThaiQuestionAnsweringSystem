@@ -72,7 +72,7 @@ with io.open(question_path, 'r', encoding='utf-8-sig') as question_file:
         question_token_list = []
         tokens_string = synthai.tokenize(question)
         tokens = tokens_string.split('|')
-        tokens = filter_interest_token(tokens)
+        # tokens = filter_interest_token(tokens)
         # tokens = lexto.tokenize(question)[0]
         for token in tokens:
             if token not in question_token_list:
