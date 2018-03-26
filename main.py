@@ -6,19 +6,21 @@ import io
 import operator
 import pprint
 from lexto.LexTo import LexTo
+import pathlib
 
 lexto = LexTo()
 
-# output_directory = 'output/lexto'
 output_directory = 'output/synthai'
 
 document_directory = 'data/Examples'
 source_directory = os.path.join(document_directory, 'Sources')
 source_list_path = os.path.join(document_directory, 'source_list.txt')
-interesting_token_type = ['NN', 'NR', 'FWN', 'VV']
+interesting_token_type = ['NN', 'NR', 'FWN', 'VV`']
 
 def write_file(file_path, content):
-    with io.open(os.path.join(output_directory, file_path), 'w', encoding='utf8') as file:
+    file_path = os.path.join(output_directory, file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with io.open(file_path, 'w', encoding='utf8') as file:
         file.write(content)
 
 def split_token(token):
@@ -35,9 +37,12 @@ def filter_token_by_type(token_list, type_list):
 def filter_interest_token(token_list):
     return filter_token_by_type(token_list, interesting_token_type)
 
+def only_word(token):
+    return split_token(token)[0]
 
 synthai = SynThai('model/SynThai/0063-0.0412.hdf5', 60)
 
+corpus_raw_documents = {}
 corpus_dictionary = {}
 with io.open(source_list_path, 'r') as source_list:
     for file_name in source_list:
@@ -45,7 +50,9 @@ with io.open(source_list_path, 'r') as source_list:
         with io.open(document_path, 'r', encoding='utf-8-sig') as document:
             document_token_list = []
             text = document.read()
+            
             tokens_string = synthai.tokenize(text)
+            corpus_raw_documents[file_name.strip()] = tokens_string
             tokens = tokens_string.split('|')
             # tokens = filter_interest_token(tokens)
             # tokens = lexto.tokenize(text)[0]
@@ -56,27 +63,33 @@ with io.open(source_list_path, 'r') as source_list:
 
                 if token not in document_token_list:
                     document_token_list.append(token)
-            
-            write_file('document_' + file_name.strip(), tokens_string) 
-            
+            write_file('docs/'+file_name.strip(), tokens_string)
 
-corpus_token_list = sorted(corpus_dictionary.items(), key=operator.itemgetter(1), reverse=True)
-write_file('corpus.txt', pprint.pformat(corpus_token_list))
+merged_noun_corpus = {}
+for key, raw in corpus_raw_documents.items():
+    print(raw)
+    i = 0
+    merged_nr = []
+    tokens = raw.split('|')
+    while i < len(tokens):
+        token = tokens[i]
+        word = only_word(token)
+        tag = token_type(token)
+        if tag == "NN" or tag == "NR":
+            while i < len(tokens):
+                token = tokens[i]
+                word = only_word(token)
+                tag = token_type(token)
+                if tag != "NR":
+                    merged_nr.append('/NN')
+                    merged_nr.append(token)
+                    break
+                merged_nr.append(word)
+                i += 1
+        else:
+            merged_nr.append(token)
+        merged_nr.append('|')
+        i += 1
+    merged_noun_corpus[key] = "".join(merged_nr)
 
-print(len(corpus_token_list))
-
-question_path = os.path.join(document_directory, 'question_list.txt')
-with io.open(question_path, 'r', encoding='utf-8-sig') as question_file:
-    for question_line in question_file:
-        id, question = question_line.strip().split('::')
-        question_token_list = []
-        tokens_string = synthai.tokenize(question)
-        tokens = tokens_string.split('|')
-        # tokens = filter_interest_token(tokens)
-        # tokens = lexto.tokenize(question)[0]
-        for token in tokens:
-            if token not in question_token_list:
-                question_token_list.append(token)
-        
-        write_file('question_' + id + '.txt', tokens_string) 
-
+    write_file('merge/'+key, merged_noun_corpus[key])
