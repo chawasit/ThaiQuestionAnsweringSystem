@@ -13,6 +13,7 @@ import numpy as np
 import copy
 import functools
 import re
+import deepcut
 
 lexto = LexTo()
 
@@ -73,20 +74,20 @@ def glob_data(*directory):
 
 def merge_token(raw_tokens):
     tokens = copy.deepcopy(raw_tokens)
-
     number_of_token = len(tokens)
     flag = np.zeros(number_of_token)
-
 
     def case_nn_nr(index):
         token = tokens[i]
         prev_token = tokens[i-1]
         tag = token_type(token)
         prev_tag = token_type(prev_token)
+        true_flag =  flag[i-1] if i-1 >= 0 else False
         return tag in ['NN', 'NR'] \
-            and prev_tag in ['NN', 'NR']
+            and (prev_tag in ['NN', 'NR'] or true_flag)
 
     def case_p_pu(index):
+        return False
         try:
             next_token = tokens[i+1]
             token = tokens[i]
@@ -94,7 +95,7 @@ def merge_token(raw_tokens):
             next_tag = token_type(next_token)
             tag = token_type(token)
             prev_tag = token_type(prev_token)
-            return tag in ['P', 'PU'] \
+            return tag in ['P'] \
                 and next_tag in ['NN', 'NR'] \
                 and prev_tag in ['NN', 'NR']
         except:
@@ -128,6 +129,7 @@ def build_document_dictionary():
             dictionary = {}
             token_string = document.read()
             tokens = token_string.split('|')
+            tokens = filter_token_by_type(tokens, ['NN', 'NE', 'VV', 'FWN', 'NR', 'OD', 'CL', 'CD'])
 
             for token in tokens:
                 word = only_word(token)
@@ -146,7 +148,7 @@ def build_document_dictionary():
 
 def build_document_dictionary2():
     print("Building Dictionary")
-
+    
     corpus_dictionary = {}
     document_dictionary = {}
     with io.open(SOURCE_LIST_PATH, 'r') as source_list:
@@ -158,6 +160,7 @@ def build_document_dictionary2():
                 dictionary = {}
                 text = document.read()
                 words = lexto.tokenize(text)[0]
+                # words = deepcut.tokenize(text)
                 for word in words:
                     if word not in corpus_dictionary:
                         corpus_dictionary[word] = 0
@@ -192,8 +195,6 @@ def tokenize_corpus():
 
 def merge_document_tokens():
     print("Merging noun and noun relate")
-
-    lexto = LexTo()
 
     file_list = glob_directory('tokenize', "*.txt")
     print("Total files: ", len(file_list))
@@ -335,6 +336,7 @@ def rank_document2():
             id, question = line.split('::')
 
             words = lexto.tokenize(question)[0]
+            # words = deepcut.tokenize(question)
             document_relevent_score = []
             for document_name, dictionary in document_dictionary.items():
                 tf_idfs = [calculate_tf_idf(document_dictionary, dictionary, word) for word in words]
